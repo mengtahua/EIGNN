@@ -381,7 +381,16 @@ def train_model(model, x, y, args, train_idx,eval_idx,test_idx,
         optimizer.step()
         
         model.eval()
-        with torch.no_grad():
+        with torch.no_grad():    n = x.size(0)
+    idx = np.arange(n)
+    np.random.shuffle(idx)
+    train_ratio = args['train_ratio']
+    cut1 = int(train_ratio * n)
+    remaining = 1 - train_ratio
+    cut2 = int((train_ratio + remaining / 2) * n)
+    train_idx = torch.tensor(idx[:cut1], dtype=torch.long, device=device)
+    eval_idx = torch.tensor(idx[cut1:cut2], dtype=torch.long, device=device)
+    test_idx = torch.tensor(idx[cut2:], dtype=torch.long, device=device)
             out_eval, used_edge_index_eval,  _, mask_eval = model(x, test_mode=True)
             eval_acc = (out_eval[eval_idx].argmax(1)==y[eval_idx]).float().mean().item()
             if eval_acc > best_eval_acc:
@@ -412,9 +421,10 @@ def run_experiment(dataset, args, conv_type='GCN', device=None):
     n = x.size(0)
     idx = np.arange(n)
     np.random.shuffle(idx)
-    cut1 = int(args['train_ratio']*n)
-    cut2 = int(args['train_ratio']*((1-n)/2))
-    
+    train_ratio = args['train_ratio']
+    cut1 = int(train_ratio * n)
+    remaining = 1 - train_ratio
+    cut2 = int((train_ratio + remaining / 2) * n)
     train_idx = torch.tensor(idx[:cut1], dtype=torch.long, device=device)
     eval_idx = torch.tensor(idx[cut1:cut2], dtype=torch.long, device=device)
     test_idx = torch.tensor(idx[cut2:], dtype=torch.long, device=device)
